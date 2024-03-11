@@ -1,0 +1,151 @@
+Program.Sub.ScreenSU.Start
+gui.Form1..create
+gui.Form1..caption("Order Notes")
+gui.Form1..size(5200,5000)
+gui.Form1..minx(0)
+gui.Form1..miny(0)
+gui.Form1..position(0,0)
+gui.Form1..event(unload,Form1_Unload)
+gui.Form1..alwaysontop(False)
+gui.Form1..fontname("Arial")
+gui.Form1..fontsize(7)
+gui.Form1..forecolor(0)
+gui.Form1..fontstyle(,,,,)
+gui.Form1..BackColor(15790320)
+gui.Form1..controlbox(True)
+gui.Form1..maxbutton(False)
+gui.Form1..minbutton(False)
+gui.Form1..mousepointer(0)
+gui.Form1..moveable(True)
+gui.Form1..sizeable(False)
+gui.Form1..ShowInTaskBar(False)
+gui.Form1..titlebar(True)
+gui.Form1.mltxtText.create(textboxm)
+gui.Form1.mltxtText.text("")
+gui.Form1.mltxtText.visible(True)
+gui.Form1.mltxtText.size(4950,4365)
+gui.Form1.mltxtText.zorder(0)
+gui.Form1.mltxtText.position(0,0)
+gui.Form1.mltxtText.enabled(False)
+gui.Form1.mltxtText.alignment(0)
+gui.Form1.mltxtText.fontname("Arial")
+gui.Form1.mltxtText.fontsize(7)
+gui.Form1.mltxtText.BackColor(-2147483643)
+gui.Form1.mltxtText.defaultvalue("")
+gui.Form1.mltxtText.controlgroup(0)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by AGM
+'1/20/2015
+'Quote 5962
+
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+
+	'ORD200 Populate hook fired
+	F.Intrinsic.Control.Case(11560)
+	V.Passed.000203.Set("Order Notes")
+
+	'ORD200 Script three fired
+	F.Intrinsic.Control.Case(11930)
+	F.Intrinsic.Control.CallSub(Custnotes)
+	'QTE200 Populate hook
+	F.Intrinsic.Control.Case(10710)
+	V.Passed.000203.Set("Order Notes")
+
+	'QTE200 Script Three hook
+	F.Intrinsic.Control.Case(10980)
+	F.Intrinsic.Control.CallSub(Custnotes)
+
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4052_Cust_OE_Notes.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.CustNotes.Start
+F.Intrinsic.Control.SetErrorHandler("CustNotes_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+V.Local.sSQL.Declare(String)
+V.Local.sText.Declare(String)
+
+
+'If Customer ID not blank than pull in the text information
+F.Intrinsic.Control.If(V.Passed.000006,<>,"")
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+'Pull in the order notes from cust_ord_notes;
+F.Intrinsic.String.Build("SELECT * FROM CUST_ORD_NOTES WHERE CUSTOMER = '{0}' ORDER BY SEQ ASC",V.Passed.000006,V.Local.sSQL)
+F.ODBC.Connection!conx.OpenRecordsetRO("rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,<>,True)
+	F.Intrinsic.Control.DoUntil(V.ODBC.conx!rst.EOF,=,True)
+		F.Intrinsic.String.Concat(V.Local.sText,V.ODBC.conx!rst.FieldValTrim!TEXT," ",V.Local.sText)
+	F.ODBC.conx!rst.MoveNext
+	F.Intrinsic.Control.Loop
+	Gui.Form1.mltxtText.Text(V.Local.sText)
+F.Intrinsic.Control.EndIf
+F.ODBC.conx!rst.Close
+
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("Please select a Customer ID","Unable to Continue")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+Gui.Form1..show
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("CustNotes_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4052_Cust_OE_Notes.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.CustNotes.End
+
+Program.Sub.Form1_Unload.Start
+F.Intrinsic.Control.SetErrorHandler("Form1_Unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.ODBC.Connection!conx.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Form1_Unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4052_Cust_OE_Notes.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Form1_Unload.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$AGM$}$1/20/2015 8:23:44 AM
+Program.Sub.Comments.End
+
